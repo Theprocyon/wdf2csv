@@ -56,7 +56,7 @@ namespace WDF2CSV
         private delegate int WdfGetVOffset(int handle, uint trace, uint block, out double vOffset);
         private delegate int WdfGetHOffset(int handle, uint trace, uint block, out double vOffset);
         private delegate int WdfGetBlockSize(int handle, uint trace, uint block, out int blockSize);
-        //private delegate int WdfGetVDataType(int handle, uint trace, uint block, out WDFVDataType vDataType);
+        private delegate int WdfGetVDataType(int handle, uint trace, uint block, out WDFVDataType vDataType);
         private delegate int WdfGetTraceName(int handle, uint trace, StringBuilder buff);
         private delegate int WdfGetScaleWave(int handle, out WDFAccessParam param);
         private delegate int WdfCloseFile(out int handle);
@@ -70,7 +70,7 @@ namespace WDF2CSV
         private WdfGetVOffset         I_getVOffset;
         private WdfGetHOffset         I_getHOffset;
         private WdfGetBlockSize       I_getBlockSize;
-        //private WdfGetVDataType     I_getVDataType;
+        private WdfGetVDataType     I_getVDataType;
         private WdfGetTraceName       I_getTraceName;
         private WdfGetScaleWave       I_getScaleWave;
         private WdfCloseFile          I_closeFile;
@@ -131,9 +131,18 @@ namespace WDF2CSV
 
             funcPtr = GetProcAddress(dllHandle, "WdfGetHResolution");
             I_getHResolution = (WdfGetHResolution)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(WdfGetHResolution));
-            
+
             funcPtr = GetProcAddress(dllHandle, "WdfGetTraceName");
             I_getTraceName = (WdfGetTraceName)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(WdfGetTraceName));
+
+            funcPtr = GetProcAddress(dllHandle, "WdfGetVUnit");
+            I_getVUnit= (WdfGetVUnit)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(WdfGetVUnit));
+
+            funcPtr = GetProcAddress(dllHandle, "WdfGetHUnit");
+            I_getHUnit = (WdfGetHUnit)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(WdfGetHUnit));
+            
+            funcPtr = GetProcAddress(dllHandle, "WdfGetVDataType");
+            I_getVDataType = (WdfGetVDataType)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(WdfGetVDataType));
 
             isLoaded = true;
         }
@@ -198,11 +207,29 @@ namespace WDF2CSV
             checkIsDLLLoaded();
             return I_getHResolution(handle, trace, block, out hResolution);
         }
+        public int getVUnit(int handle, uint trace, uint block, StringBuilder buff)
+        {
+            checkIsDLLLoaded();
+            return I_getVUnit(handle, trace, block, buff);
+        }
+        public int getHUnit(int handle, uint trace, uint block, StringBuilder buff)
+        {
+            checkIsDLLLoaded();
+            return I_getHUnit(handle, trace, block, buff);
+        }
+
+        public int getVDataType(int handle, uint trace, uint block, out WDFVDataType vDataType)
+        {
+            checkIsDLLLoaded();
+            return I_getVDataType(handle, trace, block, out vDataType);
+        }
 
         private void checkIsDLLLoaded()
         {
             if (isLoaded == false) throw new DllNotFoundException("Failed to invoke function, DLL not loaded");
         }
+
+
 
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern IntPtr LoadLibrary(string lpFileName);

@@ -119,7 +119,7 @@ namespace WDF2CSV
             catch (DllNotFoundException e)
             {
                 Debug.WriteLine(e.Message + e.StackTrace.ToString());
-                MessageBox.Show(e.Message);
+                MessageBox.Show("failed to find .dll file, Locate dll under /DLL");
                 this.Close();
             }
         }
@@ -127,11 +127,6 @@ namespace WDF2CSV
         private void convertWaveToCSV(string filePath)
         {
             int handle;
-            uint blockNumber = 0;
-            Double vResolution = 0;
-            Double vOffset = 0;
-            Double hOffset = 0;
-            int blockSize = 0;
 
             loadDLL(filePath);
 
@@ -147,6 +142,18 @@ namespace WDF2CSV
 
             for (uint num = 0; num < traceNumber; num++)
             {
+                uint blockNumber = 0;
+                Double vResolution = 0;
+                Double hResolution = 0;
+                Double vOffset = 0;
+                string vUnit = "";
+                Double hOffset = 0;
+                string hUnit = "";
+                WDFAPI.WDFVDataType vDataType = WDFAPI.WDFVDataType.wdfDataTypeSINT16;
+
+                int blockSize = 0;
+                
+
                 string outputCSVname = "";
                 StringBuilder tn = new StringBuilder();
                 wdfAPI.getTraceName(handle, num, tn);
@@ -161,11 +168,26 @@ namespace WDF2CSV
 
                     wdfAPI.getVResolution(handle, num, blockNumber, out vResolution);
 
+                    wdfAPI.getHResolution(handle, num, blockNumber, out hResolution);
+
                     wdfAPI.getVOffset(handle, num, blockNumber, out vOffset);
 
                     wdfAPI.getHOffset(handle, num, blockNumber, out hOffset);
 
                     wdfAPI.getBlockSize(handle, num, blockNumber, out blockSize);
+
+                    wdfAPI.getVDataType(handle, num, blockNumber, out vDataType);
+
+
+                    StringBuilder sb = new StringBuilder();
+
+                    wdfAPI.getVUnit(handle, num, blockNumber, sb);
+                    vUnit = sb.ToString();
+                    sb.Clear();
+
+                    wdfAPI.getHUnit(handle, num, blockNumber, sb);
+                    hUnit = sb.ToString();
+                    sb.Clear();
 
                     param.version = (uint)WDFAPI.WDFDefaultValue.WDF_DEFAULT_ACSPRM_VERSION;
                     param.trace = num;
@@ -189,10 +211,17 @@ namespace WDF2CSV
                     List<double> vvalue = new List<double>(blockSize);
                     List<double> hvalue = new List<double>(blockSize);
 
-                    GetPhysicalVValue(buff, (int)blockSize, (double)vOffset, vResolution, ref vvalue);
-                    GetPhysicalHValue((int)blockSize, (double)hOffset, vResolution, ref hvalue);
+                    if(vDataType != WDFAPI.WDFVDataType.wdfDataTypeSINT16)
+                    {
+                        MessageBox.Show("Datatype is not SINT16.. you may get wrong result");
+                        //throw new InvalidDataException("Wrong Datatype..");
+                    }
 
-                    csvFile.WriteLine("{0},{1}", "t","V");
+                    GetPhysicalVValue(buff, (int)blockSize, (double)vOffset, vResolution, ref vvalue);
+                    GetPhysicalHValue((int)blockSize, (double)hOffset, hResolution, ref hvalue);
+
+
+                    csvFile.WriteLine("{0},{1}", hUnit, vUnit);
 
                     for (int i = 0; i < hvalue.Count; i++)
                     {
