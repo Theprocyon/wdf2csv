@@ -61,8 +61,8 @@ namespace WDF2CSV
         private delegate int WdfGetScaleWave(int handle, out WDFAccessParam param);
         private delegate int WdfCloseFile(out int handle);
         private delegate int WdfGetHResolution(int handle, uint trace, uint block, out double hResolution);
-
-        //private delegate int WdfGetVUnit(int handle, uint trace, uint block, StringBuilder buff);
+        private delegate int WdfGetVUnit(int handle, uint trace, uint block, StringBuilder buff);
+        private delegate int WdfGetHUnit(int handle, uint trace, uint block, StringBuilder buff);
 
         private WdfOpenFile           I_openFileEx;
         private WdfGetTraceNumber     I_getTraceNumber;
@@ -75,6 +75,8 @@ namespace WDF2CSV
         private WdfGetScaleWave       I_getScaleWave;
         private WdfCloseFile          I_closeFile;
         private WdfGetHResolution     I_getHResolution;
+        private WdfGetVUnit           I_getVUnit;
+        private WdfGetHUnit           I_getHUnit;
 
         private IntPtr dllHandle;
 

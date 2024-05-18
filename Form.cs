@@ -14,7 +14,9 @@ namespace WDF2CSV
         private const string WDF_EXTENSION           = "*.WDF";
         private const string DLL_EXTENSION           = ".dll";
         private const string WDF_DATA_FORMAT_TYPE    = "%WDF";
-        private const string ADD_FOLDERPATH          = "DLL/";
+        private const string ADD_FOLDERPATH = "DLL/";
+        private const string OUTPUT_FOLDERPATH = "exported";
+
 
         private const string FAILED_TO_FIND_MODEL    = "Failed to find model's DLL";
 
@@ -147,9 +149,11 @@ namespace WDF2CSV
             {
                 string outputCSVname = "";
                 StringBuilder tn = new StringBuilder();
-                wdfAPI.getTraceName(handle,num, tn);
+                wdfAPI.getTraceName(handle, num, tn);
 
-                outputCSVname = System.DateTime.Now.ToString("yyyyMMddHHmmss_")+ tn.ToString() +  ".csv";
+                Directory.CreateDirectory(OUTPUT_FOLDERPATH);
+                
+                outputCSVname = Path.Combine(OUTPUT_FOLDERPATH, System.DateTime.Now.ToString("yyyyMMddHHmmss_") + tn.ToString() + ".csv");
 
                 FileStream fs = new FileStream(outputCSVname, FileMode.Create);
                 using (System.IO.StreamWriter csvFile = new System.IO.StreamWriter(fs))
