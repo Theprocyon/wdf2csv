@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using static WDF2CSV.WDFAPI;
 
 namespace WDF2CSV
 {
@@ -211,14 +212,14 @@ namespace WDF2CSV
                     List<double> vvalue = new List<double>(blockSize);
                     List<double> hvalue = new List<double>(blockSize);
 
-                    if(vDataType != WDFAPI.WDFVDataType.wdfDataTypeSINT16)
+                    if(vDataType == WDFVDataType.wdfDataTypeLOGIC32 || vDataType == WDFVDataType.wdfDataTypeLOGIC16)
                     {
-                        MessageBox.Show("Datatype is not SINT16.. you may get wrong result");
+                        MessageBox.Show("Logic datatype not supported. you may get wrong result");
                         //throw new InvalidDataException("Wrong Datatype..");
                     }
 
-                    GetPhysicalVValue(buff, (int)blockSize, (double)vOffset, vResolution, ref vvalue);
-                    GetPhysicalHValue((int)blockSize, (double)hOffset, hResolution, ref hvalue);
+                    GetPhysicalVValue(buff, (int)blockSize, (double)vOffset, vResolution, vDataType, out vvalue);
+                    GetPhysicalHValue((int)blockSize, (double)hOffset, hResolution, out hvalue);
 
 
                     csvFile.WriteLine("{0},{1}", hUnit, vUnit);
@@ -236,26 +237,45 @@ namespace WDF2CSV
         }
 
 
-        private void GetPhysicalVValue(byte[] data, int dataPoints, double vOffset, double vResolution, ref List<double> physicalValue)
+        private void GetPhysicalVValue(in byte[] data, in int dataPoints, in double vOffset, in double vResolution, in WDFAPI.WDFVDataType vDatatype, out List<double> physicalValue)
         {
-            if(physicalValue == null) physicalValue = new List<double>(dataPoints);
-            physicalValue.Clear();
+            physicalValue = new List<double>(dataPoints);
 
             int dataCount = 0;
 
+            double? tempData = null;
+
             for (int i = 0; i < dataPoints; i++)
             {
-                short v = BitConverter.ToInt16(data, dataCount);
-                dataCount += 2;
-                double t = ((double)v * vResolution) + vOffset;
-                physicalValue.Add(t);
+                switch (vDatatype)
+                {
+                    case WDFVDataType.wdfDataTypeUINT16:
+                        tempData = GetWaveDataU16(data, ref dataCount);
+                        break;
+                    case WDFVDataType.wdfDataTypeSINT16:
+                        tempData = GetWaveData16(data, ref dataCount);
+                        break;
+                    case WDFVDataType.wdfDataTypeUINT32:
+                        tempData = GetWaveDataU32(data, ref dataCount);
+                        break;
+                    case WDFVDataType.wdfDataTypeSINT32:
+                        tempData = GetWaveData32(data, ref dataCount);
+                        break;
+                    case WDFVDataType.wdfDataTypeFLOAT:
+                        tempData = GetWaveData32_float(data, ref dataCount);
+                        break;
+                }
+
+                if (tempData.HasValue)
+                {
+                    physicalValue.Add((tempData.Value * vResolution) + vOffset);
+                }
             }
         }
 
-        private void GetPhysicalHValue(int dataPoints, double hOffset, double hResolution, ref List<double> physicalValue)
+        private void GetPhysicalHValue(int dataPoints, double hOffset, double hResolution, out List<double> physicalValue)
         {
-            if (physicalValue == null) physicalValue = new List<double>(dataPoints);
-            physicalValue.Clear();
+            physicalValue = new List<double>(dataPoints);
 
             for (int i = 0; i < dataPoints; i++)
             {
@@ -288,6 +308,50 @@ namespace WDF2CSV
         {
 
         }
+
+        private int GetWaveData32(byte[] mpBuff, ref int dataCount)
+        {
+            int data = BitConverter.ToInt32(mpBuff, dataCount);
+            dataCount += 4;
+            return data;
+        }
+
+        private uint GetWaveDataU32(byte[] mpBuff, ref int dataCount)
+        {
+            uint data = BitConverter.ToUInt32(mpBuff, dataCount);
+            dataCount += 4;
+            return data;
+        }
+
+        private float GetWaveData32_float(byte[] mpBuff, ref int dataCount)
+        {
+            float data = BitConverter.ToSingle(mpBuff, dataCount);
+            dataCount += 4;
+            return data;
+        }
+
+        private long GetWaveData64(byte[] mpBuff, ref int dataCount)
+        {
+            long data = BitConverter.ToInt64(mpBuff, dataCount);
+            dataCount += 8;
+            return data;
+        }
+
+        private short GetWaveData16(byte[] mpBuff, ref int dataCount)
+        {
+            short data = BitConverter.ToInt16(mpBuff, dataCount);
+            dataCount += 2;
+            return data;
+        }
+
+        private ushort GetWaveDataU16(byte[] mpBuff, ref int dataCount)
+        {
+            ushort data = BitConverter.ToUInt16(mpBuff, dataCount);
+            dataCount += 2;
+            return data;
+        }
+
+
     }
 }
 
